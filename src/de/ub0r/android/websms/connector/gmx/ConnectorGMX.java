@@ -127,8 +127,7 @@ public class ConnectorGMX extends Connector {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final void doBootstrap(final Context context, final Intent intent)
-			throws WebSMSException {
+	protected final void doBootstrap(final Context context, final Intent intent) {
 		Log.d(TAG, "bootstrap");
 		if (inBootstrap) {
 			Log.d(TAG, "already in bootstrap: skip bootstrap");
@@ -155,8 +154,7 @@ public class ConnectorGMX extends Connector {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final void doUpdate(final Context context, final Intent intent)
-			throws WebSMSException {
+	protected final void doUpdate(final Context context, final Intent intent) {
 		Log.d(TAG, "update");
 		this.doBootstrap(context, intent);
 
@@ -168,8 +166,7 @@ public class ConnectorGMX extends Connector {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final void doSend(final Context context, final Intent intent)
-			throws WebSMSException {
+	protected final void doSend(final Context context, final Intent intent) {
 		Log.d(TAG, "send");
 		this.doBootstrap(context, intent);
 
@@ -309,11 +306,8 @@ public class ConnectorGMX extends Connector {
 	 *            {@link Context}
 	 * @param packetData
 	 *            packetData
-	 * @throws WebSMSException
-	 *             WebSMSException
 	 */
-	private void sendData(final Context context, final StringBuilder packetData)
-			throws WebSMSException {
+	private void sendData(final Context context, final StringBuilder packetData) {
 		try {
 			// check connection:
 			// get cluster side
