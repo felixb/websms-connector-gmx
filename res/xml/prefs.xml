@@ -24,6 +24,13 @@
 		android:title="@string/connector_gmx_user_" android:dialogTitle="@string/connector_gmx_user_"
 		android:summary="@string/connector_gmx_user_hint" android:inputType="textEmailAddress"
 		android:dependency="enable_gmx" />
+	<!--
+		<EditTextPreference android:key="gmx_user"
+		android:title="@string/connector_gmx_user_id_"
+		android:dialogTitle="@string/connector_gmx_user_id_"
+		android:summary="@string/connector_gmx_user_id_hint"
+		android:inputType="number" android:dependency="enable_gmx" />
+	-->
 	<EditTextPreference android:key="gmx_password"
 		android:title="@string/connector_gmx_password_" android:dialogTitle="@string/connector_gmx_password_"
 		android:summary="@string/connector_gmx_password_hint"
