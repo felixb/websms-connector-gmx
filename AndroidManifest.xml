@@ -17,8 +17,8 @@
 		not, see <http://www.gnu.org/licenses/>.
 	-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="de.ub0r.android.websms.connector.gmx" android:versionName="1.2.1"
-	android:versionCode="1102">
+	package="de.ub0r.android.websms.connector.gmx" android:versionName="1.4"
+	android:versionCode="1104">
 	<application android:label="@string/app_name" android:icon="@drawable/icon"
 		android:debuggable="true">
 
@@ -35,8 +35,8 @@
 				<category android:name="android.intent.category.INFO" />
 			</intent-filter>
 		</activity>
-		
-		<!-- Service doing all the IO. -->		
+
+		<!-- Service doing all the IO. -->
 		<service android:name="de.ub0r.android.websms.connector.common.ConnectorService"
 			android:exported="false" />
 
@@ -47,7 +47,7 @@
 				<category android:name="android.intent.category.DEFAULT" />
 			</intent-filter>
 		</activity>
-		
+
 		<!-- BroadcastReceiver listening for messages from WebSMS GUI. -->
 		<receiver android:name="de.ub0r.android.websms.connector.gmx.ConnectorGMX"
 			android:enabled="true" android:exported="true">
@@ -59,12 +59,15 @@
 			</intent-filter>
 		</receiver>
 	</application>
-	<uses-sdk android:minSdkVersion="3" android:targetSdkVersion="7" />
+	<uses-sdk android:minSdkVersion="3" android:targetSdkVersion="8" />
 	<supports-screens android:largeScreens="true"
 		android:normalScreens="true" android:smallScreens="true"
 		android:anyDensity="true" />
 	<!-- INTERNET needed for sending sms via internet. -->
 	<uses-permission android:name="android.permission.INTERNET" />
-	<!-- WAKE_LOCK needed to make sure, sms are send even if user sends device to sleep. -->
+	<!--
+		WAKE_LOCK needed to make sure, sms are send even if user sends device
+		to sleep.
+	-->
 	<uses-permission android:name="android.permission.WAKE_LOCK" />
 </manifest> 
