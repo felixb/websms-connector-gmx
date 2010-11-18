@@ -127,7 +127,8 @@ public class ConnectorGMX extends Connector {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final void doBootstrap(final Context context, final Intent intent) {
+	protected final void doBootstrap(final Context context, final Intent intent)
+			throws IOException {
 		Log.d(TAG, "bootstrap");
 		if (inBootstrap) {
 			Log.d(TAG, "already in bootstrap: skip bootstrap");
@@ -154,7 +155,8 @@ public class ConnectorGMX extends Connector {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final void doUpdate(final Context context, final Intent intent) {
+	protected final void doUpdate(final Context context, final Intent intent)
+			throws IOException {
 		Log.d(TAG, "update");
 		this.doBootstrap(context, intent);
 
@@ -166,7 +168,8 @@ public class ConnectorGMX extends Connector {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final void doSend(final Context context, final Intent intent) {
+	protected final void doSend(final Context context, final Intent intent)
+			throws IOException {
 		Log.d(TAG, "send");
 		this.doBootstrap(context, intent);
 
@@ -306,126 +309,124 @@ public class ConnectorGMX extends Connector {
 	 *            {@link Context}
 	 * @param packetData
 	 *            packetData
+	 * @throws IOException
+	 *             IOException
 	 */
-	private void sendData(final Context context, final StringBuilder packetData) {
-		try {
-			// check connection:
-			// get cluster side
-			SharedPreferences sp = PreferenceManager
-					.getDefaultSharedPreferences(context);
-			int gmxHost = sp.getInt(Preferences.PREFS_GMX_HOST, 0);
-			HttpURLConnection c = (HttpURLConnection) (new URL("http://"
-					+ TARGET_HOST[gmxHost] + TARGET_PATH)).openConnection();
-			// set prefs
-			c.setRequestProperty("User-Agent", TARGET_AGENT);
-			c.setRequestProperty("Content-Encoding", TARGET_ENCODING);
-			c.setRequestProperty("Content-Type", TARGET_CONTENT);
-			int resp = c.getResponseCode();
-			if (resp == Utils.HTTP_SERVICE_UNAVAILABLE) {
-				// switch hostname
-				gmxHost = (gmxHost + 1) % 2;
-				sp.edit().putInt(Preferences.PREFS_GMX_HOST, gmxHost).commit();
-			}
+	private void sendData(final Context context, final StringBuilder packetData)
+			throws IOException {
+		// check connection:
+		// get cluster side
+		SharedPreferences sp = PreferenceManager
+				.getDefaultSharedPreferences(context);
+		int gmxHost = sp.getInt(Preferences.PREFS_GMX_HOST, 0);
+		HttpURLConnection c = (HttpURLConnection) (new URL("http://"
+				+ TARGET_HOST[gmxHost] + TARGET_PATH)).openConnection();
+		// set prefs
+		c.setRequestProperty("User-Agent", TARGET_AGENT);
+		c.setRequestProperty("Content-Encoding", TARGET_ENCODING);
+		c.setRequestProperty("Content-Type", TARGET_CONTENT);
+		int resp = c.getResponseCode();
+		if (resp == Utils.HTTP_SERVICE_UNAVAILABLE) {
+			// switch hostname
+			gmxHost = (gmxHost + 1) % 2;
+			sp.edit().putInt(Preferences.PREFS_GMX_HOST, gmxHost).commit();
+		}
 
-			// get Connection
-			c = (HttpURLConnection) (new URL("http://" + TARGET_HOST[gmxHost]
-					+ TARGET_PATH)).openConnection();
-			// set prefs
-			c.setRequestProperty("User-Agent", TARGET_AGENT);
-			c.setRequestProperty("Content-Encoding", TARGET_ENCODING);
-			c.setRequestProperty("Content-Type", TARGET_CONTENT);
-			c.setRequestMethod("POST");
-			c.setDoOutput(true);
-			// push post data
-			OutputStream os = c.getOutputStream();
-			os.write(packetData.toString().getBytes("ISO-8859-15"));
-			os.close();
-			os = null;
-			Log.d(TAG, "--HTTP POST--");
-			Log.d(TAG, packetData.toString());
-			Log.d(TAG, "--HTTP POST--");
+		// get Connection
+		c = (HttpURLConnection) (new URL("http://" + TARGET_HOST[gmxHost]
+				+ TARGET_PATH)).openConnection();
+		// set prefs
+		c.setRequestProperty("User-Agent", TARGET_AGENT);
+		c.setRequestProperty("Content-Encoding", TARGET_ENCODING);
+		c.setRequestProperty("Content-Type", TARGET_CONTENT);
+		c.setRequestMethod("POST");
+		c.setDoOutput(true);
+		// push post data
+		OutputStream os = c.getOutputStream();
+		os.write(packetData.toString().getBytes("ISO-8859-15"));
+		os.close();
+		os = null;
+		Log.d(TAG, "--HTTP POST--");
+		Log.d(TAG, packetData.toString());
+		Log.d(TAG, "--HTTP POST--");
 
-			// send data
-			resp = c.getResponseCode();
-			if (resp != HttpURLConnection.HTTP_OK) {
-				if (resp == Utils.HTTP_SERVICE_UNAVAILABLE
-						|| resp == Utils.HTTP_SERVICE_500) {
-					throw new WebSMSException(context, R.string.error_service,
-							" HTTP: " + resp);
-				} else {
-					throw new WebSMSException(context, R.string.error_http, " "
-							+ resp);
-				}
-			}
-			// read received data
-			int bufsize = c.getHeaderFieldInt("Content-Length", -1);
-			if (bufsize > 0) {
-				String resultString = Utils.stream2str(c.getInputStream());
-				if (resultString.startsWith("The truth")) {
-					// wrong data sent!
-					throw new WebSMSException(context, R.string.error_server,
-							"" + resultString);
-				}
-				Log.d(TAG, "--HTTP RESPONSE--");
-				Log.d(TAG, resultString);
-				Log.d(TAG, "--HTTP RESPONSE--");
-
-				// strip packet
-				int resultIndex = resultString.indexOf("rslt=");
-				String outp = resultString.substring(resultIndex).replace(
-						"\\p", "\n");
-				outp = outp.replace("</WR>", "");
-
-				// get result code
-				String resultValue = getParam(outp, "rslt");
-				int rslt;
-				try {
-					rslt = Integer.parseInt(resultValue);
-				} catch (Exception e) {
-					Log.e(TAG, null, e);
-					throw new WebSMSException(e.toString());
-				}
-				switch (rslt) {
-				case RSLT_OK: // ok
-					// fetch additional info
-					String p = getParam(outp, "free_rem_month");
-					if (p != null) {
-						String b = p;
-						p = getParam(outp, "free_max_month");
-						if (p != null) {
-							b += "/" + p;
-						}
-						this.getSpec(context).setBalance(b);
-					}
-					p = getParam(outp, "customer_id");
-					if (p != null) {
-						Editor e = PreferenceManager
-								.getDefaultSharedPreferences(context).edit();
-						e.putString(Preferences.PREFS_USER, p);
-						e.commit();
-						inBootstrap = false;
-					}
-					return;
-				case RSLT_WRONG_CUSTOMER: // wrong user/pw
-					throw new WebSMSException(context, R.string.error_pw);
-				case RSLT_WRONG_MAIL: // wrong mail/pw
-					inBootstrap = false;
-					throw new WebSMSException(context, R.string.error_mail);
-				case RSLT_WRONG_SENDER: // wrong sender
-					throw new WebSMSException(context, R.string.error_sender);
-				case RSLT_UNREGISTERED_SENDER: // unregistered sender
-					throw new WebSMSException(context,
-							R.string.error_sender_unregistered);
-				default:
-					throw new WebSMSException(outp + " #" + rslt);
-				}
+		// send data
+		resp = c.getResponseCode();
+		if (resp != HttpURLConnection.HTTP_OK) {
+			if (resp == Utils.HTTP_SERVICE_UNAVAILABLE
+					|| resp == Utils.HTTP_SERVICE_500) {
+				throw new WebSMSException(context, R.string.error_service,
+						" HTTP: " + resp);
 			} else {
-				throw new WebSMSException(context,
-						R.string.error_http_header_missing);
+				throw new WebSMSException(context, R.string.error_http, " "
+						+ resp);
 			}
-		} catch (IOException e) {
-			Log.e(TAG, null, e);
-			throw new WebSMSException(e);
+		}
+		// read received data
+		int bufsize = c.getHeaderFieldInt("Content-Length", -1);
+		if (bufsize > 0) {
+			String resultString = Utils.stream2str(c.getInputStream());
+			if (resultString.startsWith("The truth")) {
+				// wrong data sent!
+				throw new WebSMSException(context, R.string.error_server, ""
+						+ resultString);
+			}
+			Log.d(TAG, "--HTTP RESPONSE--");
+			Log.d(TAG, resultString);
+			Log.d(TAG, "--HTTP RESPONSE--");
+
+			// strip packet
+			int resultIndex = resultString.indexOf("rslt=");
+			String outp = resultString.substring(resultIndex).replace("\\p",
+					"\n");
+			outp = outp.replace("</WR>", "");
+
+			// get result code
+			String resultValue = getParam(outp, "rslt");
+			int rslt;
+			try {
+				rslt = Integer.parseInt(resultValue);
+			} catch (Exception e) {
+				Log.e(TAG, null, e);
+				throw new WebSMSException(e.toString());
+			}
+			switch (rslt) {
+			case RSLT_OK: // ok
+				// fetch additional info
+				String p = getParam(outp, "free_rem_month");
+				if (p != null) {
+					String b = p;
+					p = getParam(outp, "free_max_month");
+					if (p != null) {
+						b += "/" + p;
+					}
+					this.getSpec(context).setBalance(b);
+				}
+				p = getParam(outp, "customer_id");
+				if (p != null) {
+					Editor e = PreferenceManager.getDefaultSharedPreferences(
+							context).edit();
+					e.putString(Preferences.PREFS_USER, p);
+					e.commit();
+					inBootstrap = false;
+				}
+				return;
+			case RSLT_WRONG_CUSTOMER: // wrong user/pw
+				throw new WebSMSException(context, R.string.error_pw);
+			case RSLT_WRONG_MAIL: // wrong mail/pw
+				inBootstrap = false;
+				throw new WebSMSException(context, R.string.error_mail);
+			case RSLT_WRONG_SENDER: // wrong sender
+				throw new WebSMSException(context, R.string.error_sender);
+			case RSLT_UNREGISTERED_SENDER: // unregistered sender
+				throw new WebSMSException(context,
+						R.string.error_sender_unregistered);
+			default:
+				throw new WebSMSException(outp + " #" + rslt);
+			}
+		} else {
+			throw new WebSMSException(context,
+					R.string.error_http_header_missing);
 		}
 	}
 }
