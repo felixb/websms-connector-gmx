@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.apache.http.HttpStatus;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -326,7 +328,7 @@ public class ConnectorGMX extends Connector {
 		c.setRequestProperty("Content-Encoding", TARGET_ENCODING);
 		c.setRequestProperty("Content-Type", TARGET_CONTENT);
 		int resp = c.getResponseCode();
-		if (resp == Utils.HTTP_SERVICE_UNAVAILABLE) {
+		if (resp == HttpStatus.SC_SERVICE_UNAVAILABLE) {
 			// switch hostname
 			gmxHost = (gmxHost + 1) % 2;
 			sp.edit().putInt(Preferences.PREFS_GMX_HOST, gmxHost).commit();
@@ -353,10 +355,10 @@ public class ConnectorGMX extends Connector {
 		// send data
 		resp = c.getResponseCode();
 		if (resp != HttpURLConnection.HTTP_OK) {
-			if (resp == Utils.HTTP_SERVICE_UNAVAILABLE
-					|| resp == Utils.HTTP_SERVICE_500) {
+			if (resp == HttpStatus.SC_SERVICE_UNAVAILABLE
+					|| resp == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
 				throw new WebSMSException(context, R.string.error_service,
-						" HTTP: " + resp);
+						"\nHTTP: " + resp);
 			} else {
 				throw new WebSMSException(context, R.string.error_http, " "
 						+ resp);

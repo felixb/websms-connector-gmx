@@ -60,9 +60,11 @@
 		</receiver>
 	</application>
 	<uses-sdk android:minSdkVersion="3" android:targetSdkVersion="8" />
-	<supports-screens android:largeScreens="true"
-		android:normalScreens="true" android:smallScreens="true"
+	<supports-screens android:smallScreens="true"
+		android:normalScreens="true" android:largeScreens="true"
 		android:anyDensity="true" />
+	<uses-feature android:name="android.hardware.touchscreen"
+		android:required="false" />
 	<!-- INTERNET needed for sending sms via internet. -->
 	<uses-permission android:name="android.permission.INTERNET" />
 	<!--
