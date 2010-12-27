@@ -21,6 +21,7 @@ package de.ub0r.android.websms.connector.gmx;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 
 import org.apache.http.HttpStatus;
@@ -69,9 +70,6 @@ public class ConnectorGMX extends Connector {
 	private static final String TARGET_PROGVERSION = "1.13.03";
 	// private static final String TARGET_PROGVERSION = "1.15.4.01";
 	// private static final String TARGET_PROGVERSION = "1.0.0";
-	/** Target version of protocol. */
-	private static final String TARGET_VER = "1.10";
-	// private static final String TARGET_VER = "1.01";
 
 	/** Result: ok. */
 	private static final int RSLT_OK = 0;
@@ -85,9 +83,11 @@ public class ConnectorGMX extends Connector {
 	private static final int RSLT_UNREGISTERED_SENDER = 71;
 
 	/** Connection timeout for {@link HttpURLConnection}. */
-	private static final int TIMEOUT_CONNECTION = 15000;
+	private static final int TIMEOUT_CONNECTION = 5000;
 	/** Read timeout for {@link HttpURLConnection}. */
-	private static final int TIMEOUT_READ = 5000;
+	private static final int TIMEOUT_READ = 15000;
+	/** Time to wait between tries. */
+	private static final long TIMEOUT_WAIT = 500L;
 
 	/** Max custom sender length. */
 	private static final int CUSTOM_SENDER_LEN = 10;
@@ -147,8 +147,8 @@ public class ConnectorGMX extends Connector {
 			Log.d(TAG, "skip bootstrap");
 			return;
 		}
-		StringBuilder packetData = openBuffer(context, "GET_CUSTOMER",
-				TARGET_VER, false);
+		StringBuilder packetData = openBuffer(context, "GET_CUSTOMER", "1.10",
+				false);
 		final SharedPreferences p = PreferenceManager
 				.getDefaultSharedPreferences(context);
 		writePair(packetData, "email_address", p.getString(
@@ -169,7 +169,7 @@ public class ConnectorGMX extends Connector {
 		this.doBootstrap(context, intent);
 
 		this.sendData(context, closeBuffer(openBuffer(context,
-				"GET_SMS_CREDITS", TARGET_VER, true)));
+				"GET_SMS_CREDITS", "1.00", true)));
 	}
 
 	/**
@@ -311,73 +311,25 @@ public class ConnectorGMX extends Connector {
 	}
 
 	/**
-	 * Switch target host.
-	 * 
-	 * @param p
-	 *            {@link SharedPreferences}
-	 */
-	private void switchHost(final SharedPreferences p) {
-		int gmxHost = p.getInt(Preferences.PREFS_GMX_HOST, 0);
-		gmxHost = (gmxHost + 1) % TARGET_HOST.length;
-		p.edit().putInt(Preferences.PREFS_GMX_HOST, gmxHost).commit();
-	}
-
-	/**
 	 * Send data.
 	 * 
 	 * @param context
 	 *            {@link Context}
 	 * @param packetData
 	 *            packetData
+	 * @param host
+	 *            host name to use
+	 * @return true if sent successfully
 	 * @throws IOException
 	 *             IOException
 	 */
-	private void sendData(final Context context, final StringBuilder packetData)
+	private boolean sendData(final Context context,
+			final StringBuilder packetData, final String host)
 			throws IOException {
-		Log.d(TAG, "sendDate()");
-		Log.d(TAG, "--HTTP POST--");
-		Log.d(TAG, packetData.toString());
-		Log.d(TAG, "--HTTP POST--");
-
-		// check connection:
-		// get cluster side
-		SharedPreferences sp = PreferenceManager
-				.getDefaultSharedPreferences(context);
-		int gmxHost = sp.getInt(Preferences.PREFS_GMX_HOST, 0);
-		// final int hostsLength = TARGET_HOST.length;
-		// for (int i = 0; i < hostsLength; i++) {
-		// try {
-		// Log.d(TAG, "try hostname: " + TARGET_HOST[gmxHost]);
-		// HttpURLConnection c = (HttpURLConnection) (new URL("http://"
-		// + TARGET_HOST[gmxHost] + TARGET_PATH)).openConnection();
-		// // set prefs
-		// c.setRequestProperty("User-Agent", TARGET_AGENT);
-		// c.setRequestProperty("Content-Encoding", TARGET_ENCODING);
-		// c.setRequestProperty("Content-Type", TARGET_CONTENT);
-		// c.setConnectTimeout(TIMEOUT_CONNECTION);
-		// c.setReadTimeout(TIMEOUT_READ);
-		// int resp = c.getResponseCode();
-		// Log.d(TAG, "response: " + resp);
-		// if (resp != HttpStatus.SC_OK) {
-		// // switch hostname
-		// gmxHost = (gmxHost + 1) % hostsLength;
-		// } else {
-		// break;
-		// }
-		// Thread.sleep(750L);
-		// } catch (SocketTimeoutException e) {
-		// Log.d(TAG, "socket timeout: " + TARGET_HOST[gmxHost], e);
-		// gmxHost = (gmxHost + 1) % hostsLength;
-		// } catch (InterruptedException e) {
-		// Log.d(TAG, "interrupted", e);
-		// }
-		// }
-		// sp.edit().putInt(Preferences.PREFS_GMX_HOST, gmxHost).commit();
-		Log.i(TAG, "use hostname: " + TARGET_HOST[gmxHost]);
-
+		Log.i(TAG, "sendData(ctx, data, " + host + ")");
 		// get Connection
-		HttpURLConnection c = (HttpURLConnection) (new URL("http://"
-				+ TARGET_HOST[gmxHost] + TARGET_PATH)).openConnection();
+		HttpURLConnection c = (HttpURLConnection) (new URL("http://" + host
+				+ TARGET_PATH)).openConnection();
 		// set prefs
 		c.setRequestProperty("User-Agent", TARGET_AGENT);
 		c.setRequestProperty("Content-Encoding", TARGET_ENCODING);
@@ -396,7 +348,6 @@ public class ConnectorGMX extends Connector {
 		int resp = c.getResponseCode();
 		if (resp != HttpURLConnection.HTTP_OK) {
 			Log.e(TAG, "RESP: " + resp + " " + c.getResponseMessage());
-			this.switchHost(sp);
 			if (resp == HttpStatus.SC_SERVICE_UNAVAILABLE
 					|| resp == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
 				throw new WebSMSException(context, R.string.error_service,
@@ -453,27 +404,88 @@ public class ConnectorGMX extends Connector {
 					e.putString(Preferences.PREFS_USER, p);
 					e.commit();
 				}
-				return;
+				return true;
 			case RSLT_WRONG_CUSTOMER: // wrong user/pw
-				this.switchHost(sp);
 				throw new WebSMSException(context, R.string.error_pw);
 			case RSLT_WRONG_MAIL: // wrong mail/pw
-				this.switchHost(sp);
 				throw new WebSMSException(context, R.string.error_mail);
 			case RSLT_WRONG_SENDER: // wrong sender
-				this.switchHost(sp);
 				throw new WebSMSException(context, R.string.error_sender);
 			case RSLT_UNREGISTERED_SENDER: // unregistered sender
-				this.switchHost(sp);
 				throw new WebSMSException(context,
 						R.string.error_sender_unregistered);
 			default:
-				this.switchHost(sp);
 				throw new WebSMSException(outp + " #" + rslt);
 			}
 		} else {
 			throw new WebSMSException(context,
 					R.string.error_http_header_missing);
+		}
+	}
+
+	/**
+	 * Send data.
+	 * 
+	 * @param context
+	 *            {@link Context}
+	 * @param packetData
+	 *            packetData
+	 * @throws IOException
+	 *             IOException
+	 */
+	private void sendData(final Context context, final StringBuilder packetData)
+			throws IOException {
+		Log.d(TAG, "sendData()");
+		Log.d(TAG, "--HTTP POST--");
+		Log.d(TAG, packetData.toString());
+		Log.d(TAG, "--HTTP POST--");
+
+		// check connection:
+		// get cluster side
+		SharedPreferences sp = PreferenceManager
+				.getDefaultSharedPreferences(context);
+		int gmxHost = sp.getInt(Preferences.PREFS_GMX_HOST, 0);
+		final int hostsLength = TARGET_HOST.length;
+		Exception eret = null;
+		for (int i = 0; i < hostsLength; i++) {
+			boolean ret = false;
+			try {
+				try {
+					ret = this.sendData(context, packetData,
+							TARGET_HOST[gmxHost]);
+					if (ret) {
+						eret = null;
+						break;
+					}
+				} catch (SocketTimeoutException e) {
+					Log.e(TAG, "socket timeout: " + TARGET_HOST[gmxHost], e);
+					eret = e;
+				} catch (WebSMSException e) {
+					Log.e(TAG, "WebSMSExcepton: " + e);
+					eret = e;
+					break;
+				}
+				Thread.sleep(TIMEOUT_WAIT);
+			} catch (InterruptedException e) {
+				Log.e(TAG, "interrupted", e);
+				eret = e;
+			}
+			gmxHost = (gmxHost + 1) % hostsLength;
+			this.showToast(context, context.getString(R.string.try_next_) + " "
+					+ TARGET_HOST[gmxHost]);
+		}
+		if (eret != null) {
+			gmxHost = (gmxHost + 1) % hostsLength;
+		}
+		sp.edit().putInt(Preferences.PREFS_GMX_HOST, gmxHost).commit();
+		if (eret != null) {
+			if (eret instanceof SocketTimeoutException) {
+				throw (SocketTimeoutException) eret;
+			} else if (eret instanceof WebSMSException) {
+				throw (WebSMSException) eret;
+			} else {
+				throw new WebSMSException(eret);
+			}
 		}
 	}
 }

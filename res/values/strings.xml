@@ -29,4 +29,5 @@
 	<string name="connector_gmx_user_id_hint">You should only set this, if auto fetching it with your mail fails. This id is shown in the URL of the Web-GMX-SMS-Messanger.</string>
 	<string name="connector_gmx_password_">GMX SMS Key</string>
 	<string name="connector_gmx_password_hint">GMX SMS-Manager Keycode. This is not your GMX password! See GMX!</string>
+	<string name="try_next_">Connectivity errors. Try next host:</string>
 </resources>

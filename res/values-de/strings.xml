@@ -23,4 +23,5 @@
 	<string name="connector_gmx_user_id_">GMX SMS Benutzer ID</string>
 	<string name="connector_gmx_user_id_hint">Du solltest die ID nur ausfüllen, wenn du Probleme mit dem Connector hast. Normaler Weise wird sie automatisch ausgefüllt. Die ID findest du in der URL vom Web-GMX-SMS-Manager.</string>
 	<string name="connector_gmx_password_hint">GMX SMS-Manager Freischaltcode. Nicht dein GMX Passwort! Siehe GMX.</string>
+	<string name="try_next_">Verbindungsfehler. Versuche nächsten host:</string>
 </resources>
