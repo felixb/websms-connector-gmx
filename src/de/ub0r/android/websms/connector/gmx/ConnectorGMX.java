@@ -103,7 +103,7 @@ public class ConnectorGMX extends Connector {
 		final String name = context.getString(R.string.connector_gmx_name);
 		ConnectorSpec c = new ConnectorSpec(name);
 		c.setAuthor(context.getString(R.string.connector_gmx_author));
-		c.setAdUnitId(ConnectorGMX.AD_UNITID);
+		c.setAdUnitId(AD_UNITID);
 		c.setLimitLength(CUSTOM_SENDER_LEN);
 		c.setBalance(null);
 		c.setCapabilities(ConnectorSpec.CAPABILITIES_BOOTSTRAP
