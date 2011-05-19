@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Felix Bechstein
+ * Copyright (C) 2010-2011 Felix Bechstein
  * 
  * This file is part of WebSMS.
  * 
@@ -48,6 +48,9 @@ import de.ub0r.android.websms.connector.common.ConnectorSpec.SubConnectorSpec;
 public class ConnectorGMX extends Connector {
 	/** Tag for output. */
 	private static final String TAG = "GMX";
+
+	/** Google's ad unit id. */
+	private static final String AD_UNITID = "a14dd4e1997ce70";
 
 	/** Custom {@link DateFormat}. */
 	private static final String DATEFORMAT = "yyyy-MM-dd kk-mm-00";
@@ -100,16 +103,17 @@ public class ConnectorGMX extends Connector {
 		final String name = context.getString(R.string.connector_gmx_name);
 		ConnectorSpec c = new ConnectorSpec(name);
 		c.setAuthor(context.getString(R.string.connector_gmx_author));
+		c.setAdUnitId(ConnectorGMX.AD_UNITID);
+		c.setLimitLength(CUSTOM_SENDER_LEN);
 		c.setBalance(null);
 		c.setCapabilities(ConnectorSpec.CAPABILITIES_BOOTSTRAP
 				| ConnectorSpec.CAPABILITIES_UPDATE
 				| ConnectorSpec.CAPABILITIES_SEND
 				| ConnectorSpec.CAPABILITIES_PREFS);
-		c.addSubConnector("gmx", c.getName(),
+		c.addSubConnector(TAG, c.getName(),
 				SubConnectorSpec.FEATURE_MULTIRECIPIENTS
 						| SubConnectorSpec.FEATURE_CUSTOMSENDER
 						| SubConnectorSpec.FEATURE_SENDLATER);
-		c.setLimitLength(CUSTOM_SENDER_LEN);
 		return c;
 	}
 
