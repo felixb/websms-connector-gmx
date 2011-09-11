@@ -93,7 +93,7 @@ public class ConnectorGMX extends Connector {
 	private static final long TIMEOUT_WAIT = 500L;
 
 	/** Max custom sender length. */
-	private static final int CUSTOM_SENDER_LEN = 10;
+	// private static final int CUSTOM_SENDER_LEN = 10;
 
 	/**
 	 * {@inheritDoc}
@@ -104,7 +104,7 @@ public class ConnectorGMX extends Connector {
 		ConnectorSpec c = new ConnectorSpec(name);
 		c.setAuthor(context.getString(R.string.connector_gmx_author));
 		c.setAdUnitId(AD_UNITID);
-		c.setLimitLength(CUSTOM_SENDER_LEN);
+		// FIXME: c.setLimitLength(CUSTOM_SENDER_LEN);
 		c.setBalance(null);
 		c.setCapabilities(ConnectorSpec.CAPABILITIES_BOOTSTRAP
 				| ConnectorSpec.CAPABILITIES_UPDATE
