@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Felix Bechstein
+ * Copyright (C) 2010-2011 Felix Bechstein
  * 
  * This file is part of WebSMS.
  * 
@@ -21,8 +21,8 @@ package de.ub0r.android.websms.connector.gmx;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import de.ub0r.android.websms.connector.common.ConnectorPreferenceActivity;
 import de.ub0r.android.websms.connector.common.Utils;
 
 /**
@@ -30,7 +30,7 @@ import de.ub0r.android.websms.connector.common.Utils;
  * 
  * @author flx
  */
-public final class Preferences extends PreferenceActivity {
+public final class Preferences extends ConnectorPreferenceActivity {
 	/** Preference's name: mail. */
 	static final String PREFS_MAIL = "gmx_mail";
 	/** Preference's name: username. */
