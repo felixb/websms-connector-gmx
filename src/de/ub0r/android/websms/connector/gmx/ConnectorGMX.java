@@ -35,10 +35,10 @@ import android.text.format.DateFormat;
 import de.ub0r.android.websms.connector.common.Connector;
 import de.ub0r.android.websms.connector.common.ConnectorCommand;
 import de.ub0r.android.websms.connector.common.ConnectorSpec;
+import de.ub0r.android.websms.connector.common.ConnectorSpec.SubConnectorSpec;
 import de.ub0r.android.websms.connector.common.Log;
 import de.ub0r.android.websms.connector.common.Utils;
 import de.ub0r.android.websms.connector.common.WebSMSException;
-import de.ub0r.android.websms.connector.common.ConnectorSpec.SubConnectorSpec;
 
 /**
  * AsyncTask to manage IO to GMX API.
@@ -155,10 +155,10 @@ public class ConnectorGMX extends Connector {
 				false);
 		final SharedPreferences p = PreferenceManager
 				.getDefaultSharedPreferences(context);
-		writePair(packetData, "email_address", p.getString(
-				Preferences.PREFS_MAIL, ""));
-		writePair(packetData, "password", p.getString(
-				Preferences.PREFS_PASSWORD, ""));
+		writePair(packetData, "email_address",
+				p.getString(Preferences.PREFS_MAIL, ""));
+		writePair(packetData, "password",
+				p.getString(Preferences.PREFS_PASSWORD, ""));
 		writePair(packetData, "gmx", "1");
 		this.sendData(context, closeBuffer(packetData));
 	}
@@ -172,8 +172,9 @@ public class ConnectorGMX extends Connector {
 		Log.d(TAG, "update");
 		this.doBootstrap(context, intent);
 
-		this.sendData(context, closeBuffer(openBuffer(context,
-				"GET_SMS_CREDITS", "1.00", true)));
+		this.sendData(
+				context,
+				closeBuffer(openBuffer(context, "GET_SMS_CREDITS", "1.00", true)));
 	}
 
 	/**
@@ -189,7 +190,8 @@ public class ConnectorGMX extends Connector {
 		StringBuilder packetData = openBuffer(context, // .
 				"SEND_SMS", "1.01", true);
 		// fill buffer
-		writePair(packetData, "sms_text", command.getText());
+		writePair(packetData, "sms_text",
+				CharacterTable.encodeString(command.getText()));
 		StringBuilder recipients = new StringBuilder();
 		// table: <id>, <name>, <number>
 		int j = 0;
@@ -198,8 +200,9 @@ public class ConnectorGMX extends Connector {
 			if (to[i] != null && to[i].length() > 1) {
 				recipients.append(++j);
 				recipients.append("\\;null\\;");
-				recipients.append(Utils.national2international(command
-						.getDefPrefix(), Utils.getRecipientsNumber(to[i])));
+				recipients.append(Utils.national2international(
+						command.getDefPrefix(),
+						Utils.getRecipientsNumber(to[i])));
 				recipients.append("\\;");
 			}
 		}
@@ -214,13 +217,13 @@ public class ConnectorGMX extends Connector {
 		if (customSender != null && customSender.length() > 0) {
 			writePair(packetData, "sms_sender", customSender);
 		} else {
-			writePair(packetData, "sms_sender", Utils.getSender(context,
-					command.getDefSender()));
+			writePair(packetData, "sms_sender",
+					Utils.getSender(context, command.getDefSender()));
 		}
 		final long sendLater = command.getSendLater();
 		if (sendLater > 0) {
-			writePair(packetData, "send_date", DateFormat.format(DATEFORMAT,
-					sendLater).toString());
+			writePair(packetData, "send_date",
+					DateFormat.format(DATEFORMAT, sendLater).toString());
 		}
 		// push data
 		this.sendData(context, closeBuffer(packetData));
@@ -240,8 +243,8 @@ public class ConnectorGMX extends Connector {
 			final String value) {
 		buffer.append(key);
 		buffer.append('=');
-		buffer.append(value.replace("\\", "\\\\").replace(">", "\\>").replace(
-				"<", "\\<"));
+		buffer.append(value.replace("\\", "\\\\").replace(">", "\\>")
+				.replace("<", "\\<"));
 		buffer.append("\\p");
 	}
 
@@ -272,10 +275,10 @@ public class ConnectorGMX extends Connector {
 		if (addCustomer) {
 			SharedPreferences p = PreferenceManager
 					.getDefaultSharedPreferences(context);
-			writePair(ret, "customer_id", p.getString(Preferences.PREFS_USER,
-					""));
-			writePair(ret, "password", p.getString(Preferences.PREFS_PASSWORD,
-					""));
+			writePair(ret, "customer_id",
+					p.getString(Preferences.PREFS_USER, ""));
+			writePair(ret, "password",
+					p.getString(Preferences.PREFS_PASSWORD, ""));
 		}
 		return ret;
 	}
