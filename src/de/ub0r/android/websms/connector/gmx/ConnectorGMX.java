@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2011 Felix Bechstein
+ * Copyright (C) 2010-2012 Felix Bechstein
  * 
  * This file is part of WebSMS.
  * 
@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.http.HttpStatus;
 
@@ -32,6 +34,8 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.preference.PreferenceManager;
 import android.text.format.DateFormat;
+import de.ub0r.android.websms.connector.common.CharacterTable;
+import de.ub0r.android.websms.connector.common.CharacterTableSMSLengthCalculator;
 import de.ub0r.android.websms.connector.common.Connector;
 import de.ub0r.android.websms.connector.common.ConnectorCommand;
 import de.ub0r.android.websms.connector.common.ConnectorSpec;
@@ -92,6 +96,45 @@ public class ConnectorGMX extends Connector {
 	/** Time to wait between tries. */
 	private static final long TIMEOUT_WAIT = 500L;
 
+	/** Mapping. */
+	private static final Map<String, String> MAP = new HashMap<String, String>(
+			512);
+
+	static {
+		// turkish
+		MAP.put("\u0130", "I"); // İ
+		MAP.put("\u0131", "i"); // ı
+		MAP.put("\u015E", "S"); // Ş
+		MAP.put("\u015F", "s"); // ş
+		MAP.put("\u00C7", "C"); // Ç
+		MAP.put("\u00E7", "c"); // ç
+		MAP.put("\u011E", "G"); // Ğ
+		MAP.put("\u011F", "g"); // ğ
+
+		// polish
+		MAP.put("\u0104", "A"); // Ą
+		MAP.put("\u0105", "a"); // ą
+		MAP.put("\u0106", "C"); // Ć
+		MAP.put("\u0107", "c"); // ć
+		MAP.put("\u0118", "E"); // Ę
+		MAP.put("\u0119", "e"); // ę
+		MAP.put("\u0141", "L"); // Ł
+		MAP.put("\u0142", "l"); // ł
+		MAP.put("\u0143", "N"); // Ń
+		MAP.put("\u0144", "n"); // ń
+		MAP.put("\u00D3", "O"); // Ó
+		MAP.put("\u015A", "S"); // Ś
+		MAP.put("\u015B", "s"); // ś
+		MAP.put("\u0179", "Z"); // Ź
+		MAP.put("\u017A", "z"); // ź
+		MAP.put("\u017B", "Z"); // Ż
+		MAP.put("\u017C", "z"); // ż
+		MAP.put("\u00F3", "o"); // ó
+	}
+
+	/** GMX's {@link CharacterTable}. */
+	private static final CharacterTable REPLACE = new CharacterTable(MAP);
+
 	/** Max custom sender length. */
 	// private static final int CUSTOM_SENDER_LEN = 10;
 
@@ -104,6 +147,8 @@ public class ConnectorGMX extends Connector {
 		ConnectorSpec c = new ConnectorSpec(name);
 		c.setAuthor(context.getString(R.string.connector_gmx_author));
 		c.setAdUnitId(AD_UNITID);
+		c.setSMSLengthCalculator(// .
+		new CharacterTableSMSLengthCalculator(REPLACE));
 		// FIXME: c.setLimitLength(CUSTOM_SENDER_LEN);
 		c.setBalance(null);
 		c.setCapabilities(ConnectorSpec.CAPABILITIES_BOOTSTRAP
@@ -172,9 +217,8 @@ public class ConnectorGMX extends Connector {
 		Log.d(TAG, "update");
 		this.doBootstrap(context, intent);
 
-		this.sendData(
-				context,
-				closeBuffer(openBuffer(context, "GET_SMS_CREDITS", "1.00", true)));
+		this.sendData(context, closeBuffer(// .
+				openBuffer(context, "GET_SMS_CREDITS", "1.00", true)));
 	}
 
 	/**
@@ -191,7 +235,7 @@ public class ConnectorGMX extends Connector {
 				"SEND_SMS", "1.01", true);
 		// fill buffer
 		writePair(packetData, "sms_text",
-				CharacterTable.encodeString(command.getText()));
+				ConnectorGMX.REPLACE.encodeString(command.getText()));
 		StringBuilder recipients = new StringBuilder();
 		// table: <id>, <name>, <number>
 		int j = 0;
