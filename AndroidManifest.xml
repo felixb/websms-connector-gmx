@@ -70,8 +70,8 @@
     </application>
 
     <uses-sdk
-        android:minSdkVersion="4"
-        android:targetSdkVersion="8" />
+        android:minSdkVersion="3"
+        android:targetSdkVersion="15" />
 
     <supports-screens
         android:anyDensity="true"
